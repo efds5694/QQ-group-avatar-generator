@@ -1,0 +1,1781 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>QQ群头像生成器</title>
+  <style>
+    :root {
+      --ink: #17221f;
+      --muted: #6f7b77;
+      --line: #dde5e1;
+      --panel: rgba(255, 255, 255, .88);
+      --accent: #126b50;
+      --accent-soft: #e0f1eb;
+      --page: #edf2ef;
+      --shadow: 0 22px 60px rgba(37, 54, 48, .12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 12% 4%, rgba(18, 107, 80, .11), transparent 28rem),
+        radial-gradient(circle at 90% 90%, rgba(255, 132, 56, .10), transparent 32rem),
+        var(--page);
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { color: inherit; }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 42px 0 50px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .13em;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 18px;
+      height: 3px;
+      border-radius: 99px;
+      background: currentColor;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 46px);
+      line-height: 1.06;
+      letter-spacing: -.05em;
+    }
+
+    .subtitle {
+      max-width: 440px;
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .top-note {
+      flex: 0 0 auto;
+      padding: 9px 13px;
+      border: 1px solid rgba(18, 107, 80, .14);
+      border-radius: 999px;
+      color: var(--accent);
+      background: rgba(255, 255, 255, .55);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr);
+      overflow: visible;
+      border: 1px solid rgba(29, 54, 45, .08);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .controls {
+      padding: 28px;
+      border-right: 1px solid var(--line);
+    }
+
+    .preview-panel {
+      position: sticky;
+      top: 16px;
+      align-self: start;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      min-width: 0;
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      padding: 28px;
+      border-radius: 0 24px 24px 0;
+      background: rgba(247, 249, 248, .78);
+    }
+
+    .section + .section {
+      margin-top: 24px;
+      padding-top: 23px;
+      border-top: 1px solid var(--line);
+    }
+
+    .section-head,
+    .preview-head,
+    .field-head,
+    .range-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .section-head { margin-bottom: 15px; }
+    .section-title { margin: 0; font-size: 15px; font-weight: 800; }
+    .section-index { color: #9ca7a3; font: 700 11px ui-monospace, monospace; }
+
+    label, .field-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #53605c;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .text-box {
+      position: relative;
+    }
+
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 92px;
+      resize: vertical;
+      padding: 14px 56px 14px 15px;
+      border: 1px solid #ccd7d2;
+      border-radius: 12px;
+      outline: 0;
+      color: var(--ink);
+      background: #fff;
+      line-height: 1.55;
+      transition: border-color .18s, box-shadow .18s;
+    }
+
+    textarea:focus, select:focus, input[type="number"]:focus, input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(18, 107, 80, .10);
+    }
+
+    .counter {
+      position: absolute;
+      right: 12px;
+      bottom: 10px;
+      color: #97a29e;
+      font: 11px ui-monospace, monospace;
+    }
+
+    .hint {
+      margin-top: 8px;
+      color: #8b9692;
+      font-size: 11px;
+    }
+
+    .two-col, .three-col {
+      display: grid;
+      gap: 14px;
+    }
+
+    .two-col { grid-template-columns: 1fr 1fr; }
+    .three-col { grid-template-columns: repeat(3, 1fr); }
+
+    select, input[type="number"], input[type="text"] {
+      width: 100%;
+      height: 42px;
+      padding: 0 11px;
+      border: 1px solid #ccd7d2;
+      border-radius: 10px;
+      outline: 0;
+      background: #fff;
+    }
+
+    .segment {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 11px;
+      background: #edf1ef;
+    }
+
+    .segment button {
+      height: 34px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .segment button.active {
+      color: var(--accent);
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(36, 55, 48, .09);
+    }
+
+    .range-row + .range-row { margin-top: 14px; }
+    .range-head { margin-bottom: 8px; color: #53605c; font-size: 12px; font-weight: 700; }
+    output { color: var(--accent); font: 700 11px ui-monospace, monospace; }
+
+    .range-tools {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .fit-btn {
+      padding: 4px 8px;
+      border: 0;
+      border-radius: 6px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .fit-btn:hover { filter: brightness(.97); }
+
+    input[type="range"] {
+      width: 100%;
+      height: 5px;
+      margin: 0;
+      border-radius: 99px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .range-number-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 72px;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .range-number-row input[type="number"] {
+      height: 32px;
+      padding: 0 6px;
+      border-radius: 7px;
+      font: 11px ui-monospace, monospace;
+      text-align: center;
+    }
+
+    .range-number-row input[type="range"] { min-width: 0; }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 15px;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: #fbfcfb;
+      color: #53605c;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .switch {
+      position: relative;
+      width: 38px;
+      height: 22px;
+      flex: 0 0 auto;
+    }
+
+    .switch input { position: absolute; opacity: 0; }
+    .switch span {
+      position: absolute;
+      inset: 0;
+      border-radius: 99px;
+      background: #cbd3d0;
+      cursor: pointer;
+      transition: .2s;
+    }
+    .switch span::after {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,.22);
+      transition: .2s;
+    }
+    .switch input:checked + span { background: var(--accent); }
+    .switch input:checked + span::after { transform: translateX(16px); }
+
+    .color-block + .color-block { margin-top: 16px; }
+    .color-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      margin-bottom: 9px;
+    }
+    .color-name { font-size: 12px; font-weight: 800; }
+    .color-hex { color: #7e8b86; font: 11px ui-monospace, monospace; text-transform: uppercase; }
+    .color-main {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 11px;
+      align-items: stretch;
+    }
+
+    input[type="color"] {
+      width: 48px;
+      height: 100%;
+      min-height: 80px;
+      padding: 4px;
+      border: 1px solid #cbd6d1;
+      border-radius: 10px;
+      background: #fff;
+      cursor: pointer;
+    }
+    input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 6px; }
+
+    .rgb-controls { display: grid; gap: 6px; }
+    .rgb-row {
+      display: grid;
+      grid-template-columns: 14px 1fr 46px;
+      align-items: center;
+      gap: 8px;
+    }
+    .rgb-letter { font: 800 11px ui-monospace, monospace; }
+    .rgb-row input[type="number"] {
+      height: 23px;
+      padding: 0 4px;
+      border-radius: 5px;
+      font: 11px ui-monospace, monospace;
+      text-align: center;
+    }
+    .rgb-row[data-channel="r"] input[type="range"] { accent-color: #e44848; }
+    .rgb-row[data-channel="g"] input[type="range"] { accent-color: #15945e; }
+    .rgb-row[data-channel="b"] input[type="range"] { accent-color: #2677dc; }
+
+    .palette {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 15px;
+    }
+    .swatch {
+      width: 25px;
+      height: 25px;
+      padding: 0;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      outline: 1px solid rgba(0,0,0,.10);
+      background: var(--swatch);
+      cursor: pointer;
+      transition: transform .15s;
+    }
+    .swatch:hover { transform: scale(1.13); }
+
+    .contrast-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .contrast-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #63706b;
+      font-size: 11px;
+    }
+    .contrast-dot { width: 7px; height: 7px; border-radius: 50%; background: #18a66e; }
+
+    .subtle-note {
+      margin: -5px 0 15px;
+      color: #87928e;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .section-add-btn {
+      padding: 7px 10px;
+      border: 0;
+      border-radius: 8px;
+      color: #fff;
+      background: var(--accent);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .section-add-btn::before { content: "+"; margin-right: 4px; }
+
+    .border-options {
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap: 14px;
+      margin-bottom: 17px;
+    }
+
+    .border-width-control.is-disabled,
+    .border-color-control.is-disabled {
+      opacity: .42;
+      pointer-events: none;
+    }
+
+    .extra-layout {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .extra-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 17px;
+    }
+
+    .extra-empty {
+      padding: 22px 16px;
+      border: 1px dashed #cbd5d1;
+      border-radius: 12px;
+      color: #8a9691;
+      background: #fafcfa;
+      font-size: 12px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .extra-card {
+      padding: 14px;
+      border: 1px solid #d9e1dd;
+      border-radius: 13px;
+      background: #fbfcfb;
+    }
+
+    .extra-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .extra-card-title { font-size: 12px; font-weight: 800; }
+
+    .extra-remove {
+      padding: 4px 7px;
+      border: 0;
+      border-radius: 6px;
+      color: #a13e36;
+      background: #fae9e7;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .extra-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .extra-field { min-width: 0; }
+    .extra-field-wide { grid-column: 1 / -1; }
+    .extra-field label, .extra-field .field-label { margin-bottom: 6px; }
+    .extra-field select, .extra-field input[type="text"] { height: 37px; font-size: 12px; }
+
+    .extra-field .range-head { margin-bottom: 7px; }
+    .extra-color-row {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .extra-color-row input[type="color"] {
+      width: 40px;
+      height: 37px;
+      min-height: 37px;
+      padding: 3px;
+      border-radius: 8px;
+    }
+
+    .extra-color-code {
+      overflow: hidden;
+      color: #687570;
+      font: 11px ui-monospace, monospace;
+      text-overflow: ellipsis;
+    }
+
+    .avoid-row { margin-top: 0; }
+
+    .avoid-copy {
+      display: grid;
+      gap: 2px;
+    }
+
+    .avoid-copy small {
+      color: #929d99;
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    .auto-adjust-info {
+      display: none;
+      margin-top: 9px;
+      color: var(--accent);
+      font-size: 11px;
+      text-align: right;
+    }
+
+    .auto-adjust-info.visible { display: block; }
+
+    .batch-panel {
+      margin-top: 16px;
+      border: 1px solid #d9e2dd;
+      border-radius: 12px;
+      background: #f8faf9;
+    }
+
+    .batch-panel summary {
+      padding: 12px 14px;
+      color: #43504c;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      list-style: none;
+    }
+
+    .batch-panel summary::-webkit-details-marker { display: none; }
+    .batch-panel summary::after { content: "＋"; float: right; color: var(--accent); }
+    .batch-panel[open] summary::after { content: "－"; }
+
+    .batch-body {
+      padding: 2px 14px 14px;
+      border-top: 1px solid #e1e7e4;
+    }
+
+    .batch-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 13px;
+    }
+
+    .batch-field { min-width: 0; }
+    .batch-field select { height: 37px; font-size: 12px; }
+    .batch-field .range-head { margin-bottom: 7px; }
+
+    .batch-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .batch-status {
+      margin-right: auto;
+      color: #7e8a86;
+      font-size: 10px;
+    }
+
+    .batch-apply {
+      height: 36px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 8px;
+      color: #fff;
+      background: var(--accent);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .ghost-btn, .download-btn, .random-btn {
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .ghost-btn {
+      padding: 7px 10px;
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .preview-head { margin-bottom: 17px; }
+    .preview-title { font-size: 13px; font-weight: 800; }
+    .preview-meta { color: #88948f; font: 11px ui-monospace, monospace; }
+
+    .canvas-shell {
+      position: relative;
+      width: min(100%, clamp(220px, calc(100vh - 245px), 480px));
+      max-width: 480px;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 1px solid #d8e0dc;
+      border-radius: 12px;
+      background: #111820;
+      box-shadow: 0 15px 35px rgba(38, 57, 50, .10);
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1;
+    }
+
+    .safe-area {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      box-shadow: 0 0 0 240px rgba(7, 13, 29, .54);
+      pointer-events: none;
+    }
+
+    .preview-tip {
+      margin: 14px 0 20px;
+      color: #818d89;
+      font-size: 11px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap: 10px;
+      max-width: 480px;
+      width: 100%;
+      margin: auto auto 0;
+    }
+    .actions select { min-width: 0; }
+    .download-btn {
+      height: 42px;
+      color: #fff;
+      background: var(--accent);
+      box-shadow: 0 8px 18px rgba(18, 107, 80, .22);
+    }
+    .download-btn:hover { filter: brightness(.95); }
+
+    .random-btn {
+      display: block;
+      width: 100%;
+      height: 42px;
+      margin-top: 10px;
+      color: #40504a;
+      border: 1px solid #d5ded9;
+      background: #fff;
+    }
+
+    @media (max-width: 850px) {
+      .app { padding-top: 28px; }
+      .top-note { display: none; }
+      .workspace { grid-template-columns: 1fr; overflow: visible; }
+      .controls { border-right: 0; border-bottom: 1px solid var(--line); }
+      .preview-panel { order: -1; min-height: 0; border-radius: 24px 24px 0 0; }
+      .canvas-shell { width: min(100%, clamp(220px, calc(100vh - 245px), 400px)); max-width: 400px; }
+    }
+
+    @media (max-width: 520px) {
+      .app { width: min(100% - 20px, 1180px); }
+      .topbar { margin-left: 5px; }
+      .controls, .preview-panel { padding: 20px; }
+      .two-col { grid-template-columns: 1fr; }
+      .border-options, .extra-layout { grid-template-columns: 1fr; }
+      .extra-grid, .batch-grid { grid-template-columns: 1fr; }
+      .extra-field-wide { grid-column: auto; }
+      .three-col { gap: 8px; }
+      .workspace { border-radius: 18px; }
+      .preview-panel {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: grid;
+        grid-template-columns: minmax(126px, 42vw) minmax(0, 1fr);
+        grid-template-areas:
+          "head head"
+          "canvas actions"
+          "canvas random";
+        align-items: start;
+        gap: 9px 12px;
+        padding: 12px;
+        max-height: none;
+        overflow: visible;
+        border-radius: 18px 18px 0 0;
+        border-bottom: 1px solid #d7e0dc;
+        box-shadow: 0 10px 28px rgba(31, 49, 43, .13);
+      }
+      .preview-head { grid-area: head; margin: 0; }
+      .canvas-shell { grid-area: canvas; width: 100%; max-width: 180px; margin: 0; }
+      .preview-tip { display: none; }
+      .actions { grid-area: actions; display: grid; grid-template-columns: 1fr; gap: 7px; margin: 0; }
+      .actions select, .download-btn, .random-btn { height: 36px; }
+      .random-btn { grid-area: random; margin: 0; }
+      .range-number-row { grid-template-columns: minmax(0, 1fr) 68px; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">GROUP MARK</div>
+        <h1>QQ群头像生成器</h1>
+        <p class="subtitle">用醒目的文字与纯色快速区分群聊。所有生成都在本地完成，图片不会上传。</p>
+      </div>
+      <div class="top-note">单文件 · 离线可用</div>
+    </header>
+
+    <div class="workspace">
+      <section class="controls" aria-label="头像设置">
+        <div class="section">
+          <div class="section-head">
+            <h2 class="section-title">文字内容</h2>
+            <span class="section-index">01</span>
+          </div>
+          <label for="avatarText">群名或简称</label>
+          <div class="text-box">
+            <textarea id="avatarText" maxlength="40" placeholder="例如：周末露营&#10;计划群">周末
+露营</textarea>
+            <span class="counter"><span id="charCount">4</span>/40</span>
+          </div>
+          <div class="hint">回车可手动换行；开启自动换行后，将按设定字数分行或分列。</div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <h2 class="section-title">排版样式</h2>
+            <span class="section-index">02</span>
+          </div>
+          <div class="two-col">
+            <div>
+              <span class="field-label">文字方向</span>
+              <div class="segment" id="directionSegment">
+                <button type="button" class="active" data-direction="horizontal">横向</button>
+                <button type="button" data-direction="vertical">纵向</button>
+              </div>
+            </div>
+            <div>
+              <label for="fontFamily">常见字体</label>
+              <select id="fontFamily">
+                <option value='"Microsoft YaHei", "Noto Sans SC", sans-serif'>微软雅黑</option>
+                <option value='SimHei, "Microsoft YaHei", sans-serif'>黑体</option>
+                <option value='"Noto Sans SC", "Microsoft YaHei", sans-serif'>思源黑体</option>
+                <option value='KaiTi, STKaiti, serif'>楷体</option>
+                <option value='SimSun, STSong, serif'>宋体</option>
+                <option value='FangSong, STFangsong, serif'>仿宋</option>
+                <option value='Arial, sans-serif'>Arial</option>
+                <option value='Impact, sans-serif'>Impact</option>
+                <option value='Georgia, serif'>Georgia</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="range-row" style="margin-top:16px">
+            <div class="range-head">
+              <span>字号</span>
+              <span class="range-tools"><button class="fit-btn" id="fitCircleBtn" type="button">贴合圆形</button><output id="fontSizeOut">260 px</output></span>
+            </div>
+            <input id="fontSize" type="range" min="80" max="1400" value="260" step="2">
+          </div>
+          <div class="range-row">
+            <div class="range-head"><span>字重</span><output id="fontWeightOut">900</output></div>
+            <input id="fontWeight" type="range" min="600" max="900" value="900" step="100">
+          </div>
+          <div class="range-row">
+            <div class="range-head"><span>字间距</span><output id="letterSpacingOut">6 px</output></div>
+            <input id="letterSpacing" type="range" min="-10" max="80" value="6" step="1">
+          </div>
+
+          <div class="check-row">
+            <span>自动换行</span>
+            <label class="switch" aria-label="自动换行">
+              <input id="autoWrap" type="checkbox" checked><span></span>
+            </label>
+          </div>
+          <div id="wrapControl" class="range-row">
+            <div class="range-head"><span id="wrapLabel">每行最多字数</span><output id="wrapCountOut">4 字</output></div>
+            <input id="wrapCount" type="range" min="1" max="10" value="4" step="1">
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <h2 class="section-title">RGB 配色</h2>
+            <span class="section-index">03</span>
+          </div>
+
+          <div class="color-block" data-color-group="background">
+            <div class="color-head">
+              <span class="color-name">背景色</span>
+              <span class="color-hex">#145C45</span>
+            </div>
+            <div class="color-main">
+              <input class="color-picker" type="color" value="#145c45" aria-label="背景色调色盘">
+              <div class="rgb-controls">
+                <div class="rgb-row" data-channel="r"><span class="rgb-letter">R</span><input class="rgb-range" type="range" min="0" max="255" value="20"><input class="rgb-number" type="number" min="0" max="255" value="20"></div>
+                <div class="rgb-row" data-channel="g"><span class="rgb-letter">G</span><input class="rgb-range" type="range" min="0" max="255" value="92"><input class="rgb-number" type="number" min="0" max="255" value="92"></div>
+                <div class="rgb-row" data-channel="b"><span class="rgb-letter">B</span><input class="rgb-range" type="range" min="0" max="255" value="69"><input class="rgb-number" type="number" min="0" max="255" value="69"></div>
+              </div>
+            </div>
+            <div class="palette" aria-label="推荐背景色">
+              <button class="swatch" type="button" style="--swatch:#145c45" data-color="#145c45" title="森林绿"></button>
+              <button class="swatch" type="button" style="--swatch:#d74728" data-color="#d74728" title="橙红"></button>
+              <button class="swatch" type="button" style="--swatch:#1d4ed8" data-color="#1d4ed8" title="群青"></button>
+              <button class="swatch" type="button" style="--swatch:#6d28d9" data-color="#6d28d9" title="紫色"></button>
+              <button class="swatch" type="button" style="--swatch:#be123c" data-color="#be123c" title="玫红"></button>
+              <button class="swatch" type="button" style="--swatch:#f1c40f" data-color="#f1c40f" title="明黄"></button>
+              <button class="swatch" type="button" style="--swatch:#171717" data-color="#171717" title="黑色"></button>
+              <button class="swatch" type="button" style="--swatch:#f4f0e7" data-color="#f4f0e7" title="米白"></button>
+            </div>
+          </div>
+
+          <div class="color-block" data-color-group="text">
+            <div class="color-head">
+              <span class="color-name">文字色</span>
+              <span class="color-hex">#FFFFFF</span>
+            </div>
+            <div class="color-main">
+              <input class="color-picker" type="color" value="#ffffff" aria-label="文字色调色盘">
+              <div class="rgb-controls">
+                <div class="rgb-row" data-channel="r"><span class="rgb-letter">R</span><input class="rgb-range" type="range" min="0" max="255" value="255"><input class="rgb-number" type="number" min="0" max="255" value="255"></div>
+                <div class="rgb-row" data-channel="g"><span class="rgb-letter">G</span><input class="rgb-range" type="range" min="0" max="255" value="255"><input class="rgb-number" type="number" min="0" max="255" value="255"></div>
+                <div class="rgb-row" data-channel="b"><span class="rgb-letter">B</span><input class="rgb-range" type="range" min="0" max="255" value="255"><input class="rgb-number" type="number" min="0" max="255" value="255"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="contrast-row">
+            <span class="contrast-badge"><i class="contrast-dot" id="contrastDot"></i><span id="contrastText">高对比度 7.72:1</span></span>
+            <button class="ghost-btn" id="autoTextColor" type="button">自动黑 / 白</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <h2 class="section-title">圆形边框</h2>
+            <span class="section-index">04</span>
+          </div>
+          <p class="subtle-note">边框沿 QQ 的圆形裁切边缘向内绘制，导出的正方形图片会保留完整边框。</p>
+          <div class="border-options">
+            <div>
+              <label for="borderStyle">边框样式</label>
+              <select id="borderStyle">
+                <option value="none" selected>无</option>
+                <option value="solid">实线</option>
+                <option value="dashed">虚线</option>
+                <option value="dotted">点线</option>
+                <option value="double">双线</option>
+                <option value="dashdot">点划线</option>
+              </select>
+            </div>
+            <div class="border-width-control is-disabled" id="borderWidthControl">
+              <div class="range-head"><span>边框粗细</span><output id="borderWidthOut">18 px</output></div>
+              <input id="borderWidth" type="range" min="2" max="100" value="18" step="2">
+            </div>
+          </div>
+
+          <div class="color-block border-color-control is-disabled" id="borderColorControl" data-color-group="border">
+            <div class="color-head">
+              <span class="color-name">边框颜色</span>
+              <span class="color-hex">#FFFFFF</span>
+            </div>
+            <div class="color-main">
+              <input class="color-picker" type="color" value="#ffffff" aria-label="边框颜色调色盘">
+              <div class="rgb-controls">
+                <div class="rgb-row" data-channel="r"><span class="rgb-letter">R</span><input class="rgb-range" type="range" min="0" max="255" value="255"><input class="rgb-number" type="number" min="0" max="255" value="255"></div>
+                <div class="rgb-row" data-channel="g"><span class="rgb-letter">G</span><input class="rgb-range" type="range" min="0" max="255" value="255"><input class="rgb-number" type="number" min="0" max="255" value="255"></div>
+                <div class="rgb-row" data-channel="b"><span class="rgb-letter">B</span><input class="rgb-range" type="range" min="0" max="255" value="255"><input class="rgb-number" type="number" min="0" max="255" value="255"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <h2 class="section-title">附加文字</h2>
+            <button class="section-add-btn" id="addExtraTextBtn" type="button">添加文字</button>
+          </div>
+          <p class="subtle-note">可添加多条顶部或底部文字；每条文字的字体、字号、字重、字间距和颜色均可独立设置。</p>
+          <div class="extra-layout">
+            <div>
+              <label for="extraDistribution">水平分布</label>
+              <select id="extraDistribution">
+                <option value="space-around">环绕均匀分布（两侧留白）</option>
+                <option value="space-between">两端对齐（首尾贴边）</option>
+              </select>
+            </div>
+            <div>
+              <div class="range-head"><span>距圆形边缘</span><output id="extraOffsetOut">150 px</output></div>
+              <input id="extraOffset" type="range" min="80" max="300" value="150" step="2">
+            </div>
+          </div>
+          <div class="check-row avoid-row">
+            <span class="avoid-copy">
+              <span>自动避让附加文字</span>
+              <small>优先移动中心文字，空间不足时自动缩小</small>
+            </span>
+            <label class="switch" aria-label="自动避让附加文字">
+              <input id="autoAvoidExtra" type="checkbox" checked><span></span>
+            </label>
+          </div>
+          <div class="auto-adjust-info" id="autoAdjustInfo"></div>
+
+          <details class="batch-panel">
+            <summary>批量调整附加文字</summary>
+            <div class="batch-body">
+              <div class="batch-grid">
+                <div class="batch-field">
+                  <label for="batchFontFamily">字体</label>
+                  <select id="batchFontFamily"></select>
+                </div>
+                <div class="batch-field">
+                  <label for="batchPosition">垂直位置</label>
+                  <select id="batchPosition">
+                    <option value="keep">保持各自位置</option>
+                    <option value="top">全部置于顶部</option>
+                    <option value="bottom">全部置于底部</option>
+                  </select>
+                </div>
+                <div class="batch-field">
+                  <label for="batchFontWeight">字重</label>
+                  <select id="batchFontWeight">
+                    <option value="400">常规 400</option>
+                    <option value="500">中等 500</option>
+                    <option value="600">半粗 600</option>
+                    <option value="700" selected>粗体 700</option>
+                    <option value="800">特粗 800</option>
+                    <option value="900">极粗 900</option>
+                  </select>
+                </div>
+                <div class="batch-field">
+                  <span class="field-label">文字颜色</span>
+                  <div class="extra-color-row">
+                    <input id="batchColor" type="color" value="#ffffff" aria-label="批量文字颜色">
+                    <span class="extra-color-code" id="batchColorCode">#FFFFFF</span>
+                  </div>
+                </div>
+                <div class="batch-field">
+                  <div class="range-head"><span>字号</span><output id="batchFontSizeOut">64 px</output></div>
+                  <input id="batchFontSize" type="range" min="24" max="240" value="64" step="2">
+                </div>
+                <div class="batch-field">
+                  <div class="range-head"><span>字间距</span><output id="batchLetterSpacingOut">2 px</output></div>
+                  <input id="batchLetterSpacing" type="range" min="-5" max="40" value="2" step="1">
+                </div>
+              </div>
+              <div class="batch-actions">
+                <span class="batch-status" id="batchStatus">将样式应用到全部附加文字</span>
+                <button class="batch-apply" id="applyBatchBtn" type="button">应用到全部</button>
+              </div>
+            </div>
+          </details>
+          <div class="extra-list" id="extraTextList">
+            <div class="extra-empty">尚未添加附加文字。添加后可分别放在头像顶部或底部。</div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="preview-panel" aria-label="头像预览">
+        <div class="preview-head">
+          <span class="preview-title">实时预览</span>
+          <span class="preview-meta" id="previewMeta">1024 × 1024</span>
+        </div>
+        <div class="canvas-shell">
+          <canvas id="avatarCanvas" width="1024" height="1024" aria-label="生成的群头像"></canvas>
+          <div class="safe-area" id="safeArea"></div>
+        </div>
+        <p class="preview-tip">深色四角模拟 QQ 的圆形裁切效果，下载的图片仍为完整正方形。</p>
+        <div class="actions">
+          <select id="exportSize" aria-label="导出尺寸">
+            <option value="512">512 × 512</option>
+            <option value="1024" selected>1024 × 1024</option>
+            <option value="2048">2048 × 2048</option>
+          </select>
+          <button class="download-btn" id="downloadBtn" type="button">下载 PNG 头像</button>
+        </div>
+        <button class="random-btn" id="randomBtn" type="button">换一组高对比配色</button>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+      const canvas = $('#avatarCanvas');
+      const ctx = canvas.getContext('2d');
+      const els = {
+        text: $('#avatarText'), charCount: $('#charCount'), fontFamily: $('#fontFamily'),
+        fontSize: $('#fontSize'), fontSizeOut: $('#fontSizeOut'),
+        fontWeight: $('#fontWeight'), fontWeightOut: $('#fontWeightOut'),
+        letterSpacing: $('#letterSpacing'), letterSpacingOut: $('#letterSpacingOut'),
+        autoWrap: $('#autoWrap'), wrapCount: $('#wrapCount'), wrapCountOut: $('#wrapCountOut'),
+        wrapLabel: $('#wrapLabel'), wrapControl: $('#wrapControl'), exportSize: $('#exportSize'),
+        previewMeta: $('#previewMeta'), contrastText: $('#contrastText'), contrastDot: $('#contrastDot'),
+        borderStyle: $('#borderStyle'), borderWidth: $('#borderWidth'), borderWidthOut: $('#borderWidthOut'),
+        borderWidthControl: $('#borderWidthControl'), borderColorControl: $('#borderColorControl'),
+        extraDistribution: $('#extraDistribution'), extraOffset: $('#extraOffset'), extraOffsetOut: $('#extraOffsetOut'),
+        extraTextList: $('#extraTextList'), autoAvoidExtra: $('#autoAvoidExtra'), autoAdjustInfo: $('#autoAdjustInfo'),
+        batchFontFamily: $('#batchFontFamily'), batchPosition: $('#batchPosition'),
+        batchFontWeight: $('#batchFontWeight'), batchColor: $('#batchColor'), batchColorCode: $('#batchColorCode'),
+        batchFontSize: $('#batchFontSize'), batchFontSizeOut: $('#batchFontSizeOut'),
+        batchLetterSpacing: $('#batchLetterSpacing'), batchLetterSpacingOut: $('#batchLetterSpacingOut'),
+        batchStatus: $('#batchStatus')
+      };
+      let direction = 'horizontal';
+      let nextExtraTextId = 1;
+      const extraTextItems = [];
+
+      function enhanceRangeWithNumber(range) {
+        if (range.classList.contains('rgb-range') || range.dataset.numberReady === 'true') return;
+        range.dataset.numberReady = 'true';
+        const row = document.createElement('div');
+        row.className = 'range-number-row';
+        const number = document.createElement('input');
+        number.type = 'number';
+        number.min = range.min;
+        number.max = range.max;
+        number.step = range.step || '1';
+        number.value = range.value;
+        number.setAttribute('aria-label', '滑动条数值');
+        range.parentNode.insertBefore(row, range);
+        row.append(range, number);
+        range.numberInput = number;
+
+        range.addEventListener('input', () => { number.value = range.value; });
+        const previewNumberOnRange = () => {
+          if (number.value === '') return;
+          const min = Number(range.min);
+          const max = Number(range.max);
+          const value = Number(number.value);
+          if (!Number.isFinite(value) || value < min || value > max) return;
+          range.value = value;
+          range.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        const commitNumberToRange = () => {
+          const min = Number(range.min);
+          const max = Number(range.max);
+          const raw = number.value === '' ? Number(range.value) : Number(number.value);
+          const value = Math.max(min, Math.min(max, Number.isFinite(raw) ? raw : Number(range.value)));
+          range.value = value;
+          number.value = range.value;
+          range.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        number.addEventListener('input', previewNumberOnRange);
+        number.addEventListener('change', commitNumberToRange);
+        number.addEventListener('blur', commitNumberToRange);
+      }
+
+      function enhanceAllRanges(root = document) {
+        $$('input[type="range"]', root).forEach(enhanceRangeWithNumber);
+      }
+
+      const colorGroups = {};
+      $$('[data-color-group]').forEach(group => {
+        const key = group.dataset.colorGroup;
+        colorGroups[key] = {
+          root: group,
+          picker: $('.color-picker', group),
+          hex: $('.color-hex', group),
+          rows: $$('.rgb-row', group)
+        };
+      });
+
+      const clamp255 = value => Math.max(0, Math.min(255, Number(value) || 0));
+      const toHex = value => clamp255(value).toString(16).padStart(2, '0');
+      const rgbToHex = (r, g, b) => `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+      const hexToRgb = hex => {
+        const clean = hex.replace('#', '');
+        return [parseInt(clean.slice(0, 2), 16), parseInt(clean.slice(2, 4), 16), parseInt(clean.slice(4, 6), 16)];
+      };
+      const getGroupHex = key => colorGroups[key].picker.value;
+
+      function setGroupColor(key, hex, shouldRender = true) {
+        const group = colorGroups[key];
+        const values = hexToRgb(hex);
+        group.picker.value = hex;
+        group.hex.textContent = hex.toUpperCase();
+        group.rows.forEach((row, index) => {
+          $('.rgb-range', row).value = values[index];
+          $('.rgb-number', row).value = values[index];
+        });
+        if (shouldRender) render();
+      }
+
+      function syncRgbGroup(key, changedRow, value) {
+        const group = colorGroups[key];
+        const safe = clamp255(value);
+        $('.rgb-range', changedRow).value = safe;
+        $('.rgb-number', changedRow).value = safe;
+        const values = group.rows.map(row => clamp255($('.rgb-number', row).value));
+        setGroupColor(key, rgbToHex(...values));
+      }
+
+      Object.entries(colorGroups).forEach(([key, group]) => {
+        group.picker.addEventListener('input', () => setGroupColor(key, group.picker.value));
+        group.rows.forEach(row => {
+          $('.rgb-range', row).addEventListener('input', event => syncRgbGroup(key, row, event.target.value));
+          $('.rgb-number', row).addEventListener('input', event => syncRgbGroup(key, row, event.target.value));
+        });
+      });
+
+      function luminance(hex) {
+        const rgb = hexToRgb(hex).map(v => {
+          const c = v / 255;
+          return c <= .03928 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4);
+        });
+        return .2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2];
+      }
+
+      function contrastRatio(a, b) {
+        const l1 = luminance(a), l2 = luminance(b);
+        return (Math.max(l1, l2) + .05) / (Math.min(l1, l2) + .05);
+      }
+
+      function updateContrast() {
+        const ratio = contrastRatio(getGroupHex('background'), getGroupHex('text'));
+        const good = ratio >= 4.5;
+        els.contrastText.textContent = `${good ? '高对比度' : '对比度偏低'} ${ratio.toFixed(2)}:1`;
+        els.contrastDot.style.background = good ? '#18a66e' : '#e24c3f';
+      }
+
+      function splitToChunks(text, count) {
+        const chars = Array.from(text);
+        const result = [];
+        for (let i = 0; i < chars.length; i += count) result.push(chars.slice(i, i + count));
+        return result.length ? result : [[]];
+      }
+
+      function preparedLines() {
+        const paragraphs = els.text.value.replace(/\r/g, '').split('\n');
+        if (!els.autoWrap.checked) return paragraphs.map(line => Array.from(line));
+        return paragraphs.flatMap(line => splitToChunks(line, Number(els.wrapCount.value)));
+      }
+
+      function visibleMetrics(textChars, fontSize) {
+        const sample = textChars.filter(char => char.trim()).join('') || '国';
+        const metrics = ctx.measureText(sample);
+        return {
+          ascent: metrics.actualBoundingBoxAscent || fontSize * .78,
+          descent: metrics.actualBoundingBoxDescent || fontSize * .12
+        };
+      }
+
+      function setDrawingFont(fontSize) {
+        ctx.font = `${els.fontWeight.value} ${fontSize}px ${els.fontFamily.value}`;
+      }
+
+      function horizontalTextBounds(fontSize, size = 1024, centerY = size / 2) {
+        setDrawingFont(fontSize);
+        const lines = preparedLines();
+        const spacing = Number(els.letterSpacing.value);
+        const lineHeight = fontSize * 1.14;
+        const lineMetrics = lines.map(line => visibleMetrics(line, fontSize));
+        const top = Math.min(...lineMetrics.map((metrics, index) => index * lineHeight - metrics.ascent));
+        const bottom = Math.max(...lineMetrics.map((metrics, index) => index * lineHeight + metrics.descent));
+        const centerOffset = centerY - (top + bottom) / 2;
+        const bounds = { left: size / 2, right: size / 2, top: size / 2, bottom: size / 2, hasText: false };
+
+        lines.forEach((line, lineIndex) => {
+          if (!line.length) return;
+          const widths = line.map(char => ctx.measureText(char).width);
+          const total = widths.reduce((a, b) => a + b, 0) + Math.max(0, line.length - 1) * spacing;
+          let x = size / 2 - total / 2;
+          const baselineY = centerOffset + lineIndex * lineHeight;
+          line.forEach((char, charIndex) => {
+            const metrics = ctx.measureText(char);
+            const glyphLeft = x - (metrics.actualBoundingBoxLeft || 0);
+            const glyphRight = x + (metrics.actualBoundingBoxRight || metrics.width);
+            bounds.left = Math.min(bounds.left, glyphLeft);
+            bounds.right = Math.max(bounds.right, glyphRight);
+            bounds.top = Math.min(bounds.top, baselineY - (metrics.actualBoundingBoxAscent || fontSize * .78));
+            bounds.bottom = Math.max(bounds.bottom, baselineY + (metrics.actualBoundingBoxDescent || fontSize * .12));
+            bounds.hasText = true;
+            x += widths[charIndex] + spacing;
+          });
+        });
+        return bounds;
+      }
+
+      function verticalTextBounds(fontSize, size = 1024, centerY = size / 2) {
+        setDrawingFont(fontSize);
+        const columns = preparedLines();
+        const spacing = Number(els.letterSpacing.value);
+        const stepY = fontSize + spacing;
+        const stepX = fontSize * 1.12;
+        const totalWidth = Math.max(fontSize, columns.length * stepX);
+        let x = size / 2 + totalWidth / 2 - stepX / 2;
+        const bounds = { left: size / 2, right: size / 2, top: size / 2, bottom: size / 2, hasText: false };
+
+        columns.forEach(column => {
+          const totalHeight = column.length ? column.length * fontSize + Math.max(0, column.length - 1) * spacing : fontSize;
+          let y = centerY - totalHeight / 2 + fontSize / 2;
+          column.forEach(char => {
+            const metrics = ctx.measureText(char.trim() ? char : '国');
+            const ascent = metrics.actualBoundingBoxAscent || fontSize * .78;
+            const descent = metrics.actualBoundingBoxDescent || fontSize * .12;
+            const left = metrics.actualBoundingBoxLeft || 0;
+            const right = metrics.actualBoundingBoxRight || metrics.width;
+            const drawX = x - (right - left) / 2;
+            const baselineY = y + (ascent - descent) / 2;
+            bounds.left = Math.min(bounds.left, drawX - left);
+            bounds.right = Math.max(bounds.right, drawX + right);
+            bounds.top = Math.min(bounds.top, baselineY - ascent);
+            bounds.bottom = Math.max(bounds.bottom, baselineY + descent);
+            bounds.hasText = true;
+            y += stepY;
+          });
+          x -= stepX;
+        });
+        return bounds;
+      }
+
+      function textCornerRadius(fontSize) {
+        const size = 1024;
+        const bounds = direction === 'horizontal'
+          ? horizontalTextBounds(fontSize, size)
+          : verticalTextBounds(fontSize, size);
+        if (!bounds.hasText) return 0;
+        const halfWidth = Math.max(Math.abs(bounds.left - size / 2), Math.abs(bounds.right - size / 2));
+        const halfHeight = Math.max(Math.abs(bounds.top - size / 2), Math.abs(bounds.bottom - size / 2));
+        return Math.hypot(halfWidth, halfHeight);
+      }
+
+      function fitTextToCircle() {
+        if (!els.text.value.replace(/\s/g, '')) return;
+        const targetRadius = 1024 * .492;
+        let low = Number(els.fontSize.min);
+        let high = Number(els.fontSize.max);
+        for (let i = 0; i < 24; i++) {
+          const middle = (low + high) / 2;
+          if (textCornerRadius(middle) <= targetRadius) low = middle;
+          else high = middle;
+        }
+        els.fontSize.value = Math.max(Number(els.fontSize.min), Math.floor(low / 2) * 2);
+        updateOutputs();
+        render();
+      }
+
+      function drawSpacedText(textChars, centerX, baselineY, spacing) {
+        const widths = textChars.map(char => ctx.measureText(char).width);
+        const total = widths.reduce((a, b) => a + b, 0) + Math.max(0, textChars.length - 1) * spacing;
+        let x = centerX - total / 2;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        textChars.forEach((char, index) => {
+          ctx.fillText(char, x, baselineY);
+          x += widths[index] + spacing;
+        });
+      }
+
+      function renderHorizontal(scale, size, baseFontSize = Number(els.fontSize.value), baseCenterY = 512) {
+        const lines = preparedLines();
+        const fontSize = baseFontSize * scale;
+        const centerY = baseCenterY * scale;
+        const spacing = Number(els.letterSpacing.value) * scale;
+        const lineHeight = fontSize * 1.14;
+        const lineMetrics = lines.map(line => visibleMetrics(line, fontSize));
+        const top = Math.min(...lineMetrics.map((metrics, index) => index * lineHeight - metrics.ascent));
+        const bottom = Math.max(...lineMetrics.map((metrics, index) => index * lineHeight + metrics.descent));
+        const centerOffset = centerY - (top + bottom) / 2;
+        lines.forEach((line, index) => {
+          const baselineY = centerOffset + index * lineHeight;
+          drawSpacedText(line, size / 2, baselineY, spacing);
+        });
+      }
+
+      function renderVertical(scale, size, baseFontSize = Number(els.fontSize.value), baseCenterY = 512) {
+        const columns = preparedLines();
+        const fontSize = baseFontSize * scale;
+        const centerY = baseCenterY * scale;
+        const spacing = Number(els.letterSpacing.value) * scale;
+        const stepY = fontSize + spacing;
+        const stepX = fontSize * 1.12;
+        const totalWidth = Math.max(fontSize, columns.length * stepX);
+        let x = size / 2 + totalWidth / 2 - stepX / 2;
+        columns.forEach(column => {
+          const totalHeight = column.length ? column.length * fontSize + Math.max(0, column.length - 1) * spacing : fontSize;
+          let y = centerY - totalHeight / 2 + fontSize / 2;
+          column.forEach(char => {
+            const metrics = ctx.measureText(char.trim() ? char : '国');
+            const ascent = metrics.actualBoundingBoxAscent || fontSize * .78;
+            const descent = metrics.actualBoundingBoxDescent || fontSize * .12;
+            const left = metrics.actualBoundingBoxLeft || 0;
+            const right = metrics.actualBoundingBoxRight || metrics.width;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText(char, x - (right - left) / 2, y + (ascent - descent) / 2);
+            y += stepY;
+          });
+          x -= stepX;
+        });
+      }
+
+      function setExtraTextFont(item, scale) {
+        ctx.font = `${item.fontWeight} ${item.fontSize * scale}px ${item.fontFamily}`;
+      }
+
+      function measureExtraText(item, scale) {
+        setExtraTextFont(item, scale);
+        const chars = Array.from(item.text);
+        const spacing = item.letterSpacing * scale;
+        const widths = chars.map(char => ctx.measureText(char).width);
+        const metrics = visibleMetrics(chars, item.fontSize * scale);
+        return {
+          chars,
+          spacing,
+          width: widths.reduce((sum, width) => sum + width, 0) + Math.max(0, chars.length - 1) * spacing,
+          ...metrics
+        };
+      }
+
+      function getAutoMainLayout() {
+        const requestedFontSize = Number(els.fontSize.value);
+        const defaultLayout = { fontSize: requestedFontSize, centerY: 512 };
+        const visibleExtras = extraTextItems.filter(item => item.text.trim());
+        els.autoAdjustInfo.classList.remove('visible');
+        els.autoAdjustInfo.textContent = '';
+        if (!els.autoAvoidExtra.checked || !visibleExtras.length || !els.text.value.trim()) return defaultLayout;
+
+        const topItems = visibleExtras.filter(item => item.position === 'top');
+        const bottomItems = visibleExtras.filter(item => item.position === 'bottom');
+        const rowHeight = items => items.reduce((max, item) => {
+          const measured = measureExtraText(item, 1);
+          return Math.max(max, measured.ascent + measured.descent);
+        }, 0);
+        const gap = 26;
+        const offset = Number(els.extraOffset.value);
+        const topLimit = topItems.length ? offset + rowHeight(topItems) / 2 + gap : 0;
+        const bottomLimit = bottomItems.length ? 1024 - offset - rowHeight(bottomItems) / 2 - gap : 1024;
+        const circleRadius = 1024 * .492;
+
+        const boundsAt = (fontSize, centerY) => direction === 'horizontal'
+          ? horizontalTextBounds(fontSize, 1024, centerY)
+          : verticalTextBounds(fontSize, 1024, centerY);
+
+        const circleContains = bounds => {
+          if (!bounds.hasText) return true;
+          const corners = [
+            [bounds.left, bounds.top], [bounds.right, bounds.top],
+            [bounds.left, bounds.bottom], [bounds.right, bounds.bottom]
+          ];
+          return corners.every(([x, y]) => Math.hypot(x - 512, y - 512) <= circleRadius);
+        };
+
+        const tryFontSize = fontSize => {
+          const centered = boundsAt(fontSize, 512);
+          if (!centered.hasText) return defaultLayout;
+          const topRelative = centered.top - 512;
+          const bottomRelative = centered.bottom - 512;
+          const lowestCenter = topLimit - topRelative;
+          const highestCenter = bottomLimit - bottomRelative;
+          if (lowestCenter > highestCenter) return null;
+          const centerY = Math.max(lowestCenter, Math.min(highestCenter, 512));
+          const shifted = boundsAt(fontSize, centerY);
+          if (shifted.top < topLimit || shifted.bottom > bottomLimit || !circleContains(shifted)) return null;
+          return { fontSize, centerY };
+        };
+
+        let layout = tryFontSize(requestedFontSize);
+        if (!layout) {
+          let low = 10;
+          let high = requestedFontSize;
+          layout = tryFontSize(low) || { fontSize: low, centerY: (topLimit + bottomLimit) / 2 };
+          for (let i = 0; i < 22; i++) {
+            const middle = (low + high) / 2;
+            const candidate = tryFontSize(middle);
+            if (candidate) {
+              low = middle;
+              layout = candidate;
+            } else {
+              high = middle;
+            }
+          }
+        }
+
+        const messages = [];
+        const shift = Math.round(layout.centerY - 512);
+        if (shift) messages.push(`${shift > 0 ? '下移' : '上移'} ${Math.abs(shift)} px`);
+        if (layout.fontSize < requestedFontSize - .5) messages.push(`字号 ${requestedFontSize} → ${Math.floor(layout.fontSize)} px`);
+        if (messages.length) {
+          els.autoAdjustInfo.textContent = `已自动调整：${messages.join(' · ')}`;
+          els.autoAdjustInfo.classList.add('visible');
+        }
+        return layout;
+      }
+
+      function renderExtraTextGroup(items, position, scale, size) {
+        const visibleItems = items.filter(item => item.text.trim());
+        if (!visibleItems.length) return;
+        const centerY = position === 'top'
+          ? Number(els.extraOffset.value) * scale
+          : size - Number(els.extraOffset.value) * scale;
+        const radius = size / 2;
+        const distanceFromCenter = Math.abs(centerY - radius);
+        const halfChord = Math.sqrt(Math.max(0, radius * radius - distanceFromCenter * distanceFromCenter));
+        const edgePadding = Math.max(8 * scale, (els.borderStyle.value === 'none' ? 0 : Number(els.borderWidth.value) * scale) + 4 * scale);
+        const leftEdge = radius - halfChord + edgePadding;
+        const rightEdge = radius + halfChord - edgePadding;
+        const measured = visibleItems.map(item => ({ item, ...measureExtraText(item, scale) }));
+        const totalTextWidth = measured.reduce((sum, entry) => sum + entry.width, 0);
+        const availableWidth = Math.max(0, rightEdge - leftEdge);
+        const centers = [];
+        let cursor;
+
+        if (measured.length === 1) {
+          centers.push(size / 2);
+        } else if (els.extraDistribution.value === 'space-between') {
+          const gap = (availableWidth - totalTextWidth) / (measured.length - 1);
+          cursor = leftEdge;
+          measured.forEach(entry => {
+            centers.push(cursor + entry.width / 2);
+            cursor += entry.width + gap;
+          });
+        } else {
+          const gap = (availableWidth - totalTextWidth) / measured.length;
+          cursor = leftEdge + gap / 2;
+          measured.forEach(entry => {
+            centers.push(cursor + entry.width / 2);
+            cursor += entry.width + gap;
+          });
+        }
+
+        measured.forEach((entry, index) => {
+          setExtraTextFont(entry.item, scale);
+          ctx.fillStyle = entry.item.color;
+          const baselineY = centerY + (entry.ascent - entry.descent) / 2;
+          drawSpacedText(entry.chars, centers[index], baselineY, entry.spacing);
+        });
+      }
+
+      function renderExtraTexts(scale, size) {
+        renderExtraTextGroup(extraTextItems.filter(item => item.position === 'top'), 'top', scale, size);
+        renderExtraTextGroup(extraTextItems.filter(item => item.position === 'bottom'), 'bottom', scale, size);
+      }
+
+      function strokeCircle(radius, lineWidth, dash = [], lineCap = 'butt') {
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, radius, 0, Math.PI * 2);
+        ctx.lineWidth = lineWidth;
+        ctx.setLineDash(dash);
+        ctx.lineCap = lineCap;
+        ctx.stroke();
+      }
+
+      function renderBorder(scale, size) {
+        const style = els.borderStyle.value;
+        if (style === 'none') return;
+        const width = Number(els.borderWidth.value) * scale;
+        const outerRadius = size / 2;
+        ctx.save();
+        ctx.strokeStyle = getGroupHex('border');
+
+        if (style === 'double') {
+          const stripe = Math.max(1, width / 3);
+          strokeCircle(outerRadius - stripe / 2, stripe);
+          strokeCircle(outerRadius - width + stripe / 2, stripe);
+        } else {
+          const radius = outerRadius - width / 2;
+          if (style === 'dashed') strokeCircle(radius, width, [width * 3, width * 1.8]);
+          else if (style === 'dotted') strokeCircle(radius, width, [width * .05, width * 1.9], 'round');
+          else if (style === 'dashdot') strokeCircle(radius, width, [width * 3, width * 1.35, width * .12, width * 1.35], 'round');
+          else strokeCircle(radius, width);
+        }
+        ctx.restore();
+      }
+
+      function render() {
+        const size = Number(els.exportSize.value);
+        const scale = size / 1024;
+        if (canvas.width !== size) canvas.width = size;
+        if (canvas.height !== size) canvas.height = size;
+        ctx.fillStyle = getGroupHex('background');
+        ctx.fillRect(0, 0, size, size);
+        ctx.save();
+        ctx.fillStyle = getGroupHex('text');
+        const mainLayout = getAutoMainLayout();
+        setDrawingFont(mainLayout.fontSize * scale);
+        direction === 'horizontal'
+          ? renderHorizontal(scale, size, mainLayout.fontSize, mainLayout.centerY)
+          : renderVertical(scale, size, mainLayout.fontSize, mainLayout.centerY);
+        ctx.restore();
+        ctx.save();
+        renderExtraTexts(scale, size);
+        ctx.restore();
+        renderBorder(scale, size);
+        els.previewMeta.textContent = `${size} × ${size}`;
+        updateContrast();
+      }
+
+      function updateExtraCardTitles() {
+        $$('.extra-card', els.extraTextList).forEach((card, index) => {
+          $('.extra-card-title', card).textContent = `附加文字 ${index + 1}`;
+        });
+      }
+
+      function showExtraEmptyState() {
+        if (extraTextItems.length) return;
+        els.extraTextList.innerHTML = '<div class="extra-empty">尚未添加附加文字。添加后可分别放在头像顶部或底部。</div>';
+      }
+
+      function addExtraText() {
+        const position = extraTextItems.length % 2 === 0 ? 'top' : 'bottom';
+        const item = {
+          id: nextExtraTextId++,
+          text: position === 'top' ? '顶部文字' : '底部文字',
+          position,
+          fontFamily: els.fontFamily.value,
+          fontSize: 64,
+          fontWeight: 700,
+          letterSpacing: 2,
+          color: getGroupHex('text')
+        };
+        extraTextItems.push(item);
+        $('.extra-empty', els.extraTextList)?.remove();
+
+        const card = document.createElement('div');
+        card.className = 'extra-card';
+        card.dataset.extraId = item.id;
+        card.innerHTML = `
+          <div class="extra-card-head">
+            <span class="extra-card-title">附加文字</span>
+            <button class="extra-remove" type="button">删除</button>
+          </div>
+          <div class="extra-grid">
+            <div class="extra-field extra-field-wide">
+              <label>文字内容</label>
+              <input type="text" data-field="text" maxlength="20" placeholder="输入一行短文字">
+            </div>
+            <div class="extra-field">
+              <label>垂直位置</label>
+              <select data-field="position">
+                <option value="top">顶部</option>
+                <option value="bottom">底部</option>
+              </select>
+            </div>
+            <div class="extra-field">
+              <label>字体</label>
+              <select data-field="fontFamily"></select>
+            </div>
+            <div class="extra-field">
+              <label>字重</label>
+              <select data-field="fontWeight">
+                <option value="400">常规 400</option>
+                <option value="500">中等 500</option>
+                <option value="600">半粗 600</option>
+                <option value="700">粗体 700</option>
+                <option value="800">特粗 800</option>
+                <option value="900">极粗 900</option>
+              </select>
+            </div>
+            <div class="extra-field">
+              <div class="range-head"><span>字号</span><output data-output="fontSize">64 px</output></div>
+              <input type="range" data-field="fontSize" min="24" max="240" value="64" step="2">
+            </div>
+            <div class="extra-field">
+              <div class="range-head"><span>字间距</span><output data-output="letterSpacing">2 px</output></div>
+              <input type="range" data-field="letterSpacing" min="-5" max="40" value="2" step="1">
+            </div>
+            <div class="extra-field">
+              <span class="field-label">文字颜色</span>
+              <div class="extra-color-row">
+                <input type="color" data-field="color" aria-label="附加文字颜色">
+                <span class="extra-color-code" data-output="color"></span>
+              </div>
+            </div>
+          </div>`;
+
+        const textInput = $('[data-field="text"]', card);
+        const positionSelect = $('[data-field="position"]', card);
+        const fontSelect = $('[data-field="fontFamily"]', card);
+        const weightSelect = $('[data-field="fontWeight"]', card);
+        const colorInput = $('[data-field="color"]', card);
+        textInput.value = item.text;
+        positionSelect.value = item.position;
+        fontSelect.innerHTML = els.fontFamily.innerHTML;
+        fontSelect.value = item.fontFamily;
+        weightSelect.value = String(item.fontWeight);
+        colorInput.value = item.color;
+        $('[data-output="color"]', card).textContent = item.color.toUpperCase();
+
+        card.addEventListener('input', event => {
+          const field = event.target.dataset.field;
+          if (!field) return;
+          const numericFields = ['fontSize', 'fontWeight', 'letterSpacing'];
+          item[field] = numericFields.includes(field) ? Number(event.target.value) : event.target.value;
+          const output = $(`[data-output="${field}"]`, card);
+          if (output) {
+            if (field === 'color') output.textContent = item.color.toUpperCase();
+            else output.textContent = `${item[field]} px`;
+          }
+          render();
+        });
+
+        $('.extra-remove', card).addEventListener('click', () => {
+          const index = extraTextItems.findIndex(entry => entry.id === item.id);
+          if (index !== -1) extraTextItems.splice(index, 1);
+          card.remove();
+          updateExtraCardTitles();
+          showExtraEmptyState();
+          render();
+        });
+
+        els.extraTextList.appendChild(card);
+        enhanceAllRanges(card);
+        updateExtraCardTitles();
+        render();
+      }
+
+      function syncExtraCardFromItem(item) {
+        const card = $(`.extra-card[data-extra-id="${item.id}"]`, els.extraTextList);
+        if (!card) return;
+        const setValue = (field, value) => {
+          const input = $(`[data-field="${field}"]`, card);
+          if (!input) return;
+          input.value = value;
+          if (input.numberInput) input.numberInput.value = value;
+        };
+        setValue('text', item.text);
+        setValue('position', item.position);
+        setValue('fontFamily', item.fontFamily);
+        setValue('fontWeight', item.fontWeight);
+        setValue('fontSize', item.fontSize);
+        setValue('letterSpacing', item.letterSpacing);
+        setValue('color', item.color);
+        $('[data-output="fontSize"]', card).textContent = `${item.fontSize} px`;
+        $('[data-output="letterSpacing"]', card).textContent = `${item.letterSpacing} px`;
+        $('[data-output="color"]', card).textContent = item.color.toUpperCase();
+      }
+
+      function applyBatchToExtraTexts() {
+        if (!extraTextItems.length) {
+          els.batchStatus.textContent = '请先添加至少一条附加文字';
+          return;
+        }
+        extraTextItems.forEach(item => {
+          item.fontFamily = els.batchFontFamily.value;
+          item.fontSize = Number(els.batchFontSize.value);
+          item.fontWeight = Number(els.batchFontWeight.value);
+          item.letterSpacing = Number(els.batchLetterSpacing.value);
+          item.color = els.batchColor.value;
+          if (els.batchPosition.value !== 'keep') item.position = els.batchPosition.value;
+          syncExtraCardFromItem(item);
+        });
+        els.batchStatus.textContent = `已应用到 ${extraTextItems.length} 条附加文字`;
+        render();
+      }
+
+      function updateOutputs() {
+        els.charCount.textContent = Array.from(els.text.value).filter(char => char !== '\n').length;
+        els.fontSizeOut.textContent = `${els.fontSize.value} px`;
+        els.fontWeightOut.textContent = els.fontWeight.value;
+        els.letterSpacingOut.textContent = `${els.letterSpacing.value} px`;
+        els.wrapCountOut.textContent = `${els.wrapCount.value} 字`;
+        els.wrapLabel.textContent = direction === 'horizontal' ? '每行最多字数' : '每列最多字数';
+        els.wrapControl.style.opacity = els.autoWrap.checked ? '1' : '.42';
+        els.wrapCount.disabled = !els.autoWrap.checked;
+        if (els.wrapCount.numberInput) els.wrapCount.numberInput.disabled = !els.autoWrap.checked;
+        els.borderWidthOut.textContent = `${els.borderWidth.value} px`;
+        els.extraOffsetOut.textContent = `${els.extraOffset.value} px`;
+        els.batchFontSizeOut.textContent = `${els.batchFontSize.value} px`;
+        els.batchLetterSpacingOut.textContent = `${els.batchLetterSpacing.value} px`;
+        const borderDisabled = els.borderStyle.value === 'none';
+        els.borderWidthControl.classList.toggle('is-disabled', borderDisabled);
+        els.borderColorControl.classList.toggle('is-disabled', borderDisabled);
+      }
+
+      [els.text, els.fontFamily, els.fontSize, els.fontWeight, els.letterSpacing, els.autoWrap, els.wrapCount,
+        els.exportSize, els.borderStyle, els.borderWidth, els.extraDistribution, els.extraOffset, els.autoAvoidExtra].forEach(el => {
+        el.addEventListener('input', () => { updateOutputs(); render(); });
+        el.addEventListener('change', () => { updateOutputs(); render(); });
+      });
+
+      $$('#directionSegment button').forEach(button => {
+        button.addEventListener('click', () => {
+          direction = button.dataset.direction;
+          $$('#directionSegment button').forEach(item => item.classList.toggle('active', item === button));
+          updateOutputs();
+          render();
+        });
+      });
+
+      $$('.swatch').forEach(button => {
+        button.addEventListener('click', () => setGroupColor('background', button.dataset.color));
+      });
+
+      $('#fitCircleBtn').addEventListener('click', fitTextToCircle);
+      $('#addExtraTextBtn').addEventListener('click', addExtraText);
+      $('#applyBatchBtn').addEventListener('click', applyBatchToExtraTexts);
+
+      els.batchColor.addEventListener('input', () => {
+        els.batchColorCode.textContent = els.batchColor.value.toUpperCase();
+      });
+      [els.batchFontSize, els.batchLetterSpacing].forEach(range => {
+        range.addEventListener('input', updateOutputs);
+      });
+
+      $('#autoTextColor').addEventListener('click', () => {
+        const background = getGroupHex('background');
+        const whiteRatio = contrastRatio(background, '#ffffff');
+        const blackRatio = contrastRatio(background, '#000000');
+        setGroupColor('text', whiteRatio >= blackRatio ? '#ffffff' : '#000000');
+      });
+
+      const colorPairs = [
+        ['#0b3b60', '#ffffff'], ['#efc900', '#171717'], ['#c3372b', '#ffffff'],
+        ['#682bd7', '#ffffff'], ['#d9f06e', '#17210d'], ['#172c25', '#ffb86b'],
+        ['#f2eee5', '#173f35'], ['#005b96', '#fff2c7'], ['#841c36', '#ffffff']
+      ];
+      let lastPair = -1;
+      $('#randomBtn').addEventListener('click', () => {
+        let next;
+        do next = Math.floor(Math.random() * colorPairs.length); while (next === lastPair && colorPairs.length > 1);
+        lastPair = next;
+        setGroupColor('background', colorPairs[next][0], false);
+        setGroupColor('text', colorPairs[next][1]);
+      });
+
+      $('#downloadBtn').addEventListener('click', () => {
+        render();
+        const safeName = els.text.value.replace(/\s+/g, '-').replace(/[\\/:*?"<>|]/g, '').slice(0, 20) || 'QQ群头像';
+        const link = document.createElement('a');
+        link.download = `${safeName}-${canvas.width}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+
+      els.batchFontFamily.innerHTML = els.fontFamily.innerHTML;
+      els.batchFontFamily.value = els.fontFamily.value;
+      enhanceAllRanges();
+      document.fonts?.ready.then(render);
+      updateOutputs();
+      render();
+    })();
+  </script>
+</body>
+</html>
